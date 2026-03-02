@@ -1,0 +1,55 @@
+name: Check Appointment Availability
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: # allow manual trigger
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install --with-deps chromium
+
+      - name: Restore state
+        uses: actions/cache/restore@v4
+        with:
+          path: state.json
+          key: appt-state
+
+      - name: Run checker
+        env:
+          NEXHEALTH_BOOKING_URL: ${{ secrets.NEXHEALTH_BOOKING_URL }}
+          PROVIDER_NAMES: ${{ secrets.PROVIDER_NAMES }}
+          APPOINTMENT_TYPE: ${{ secrets.APPOINTMENT_TYPE }}
+          HEADLESS: "true"
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          NOTIFY_EMAIL_TO: ${{ secrets.NOTIFY_EMAIL_TO }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python checker.py --once
+
+      - name: Save state
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: state.json
+          key: appt-state-${{ github.run_id }}
+
+      - name: Upload debug screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: debug-${{ github.run_id }}
+          path: debug/
+          retention-days: 3
+          if-no-files-found: ignore

@@ -55,9 +55,15 @@ async def run_once() -> None:
 
 async def main() -> None:
     setup_logging()
-    log.info("Appointment checker started. Interval: %d minutes. Headless: %s",
-             config.CHECK_INTERVAL_MINUTES, config.HEADLESS)
+    once = "--once" in sys.argv
+    log.info("Appointment checker started. Mode: %s. Headless: %s",
+             "single run" if once else f"loop ({config.CHECK_INTERVAL_MINUTES}min)",
+             config.HEADLESS)
     log.info("Providers: %s", ", ".join(config.PROVIDER_NAMES))
+
+    if once:
+        await run_once()
+        return
 
     while True:
         try:
