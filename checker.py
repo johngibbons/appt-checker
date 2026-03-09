@@ -55,6 +55,15 @@ async def run_once() -> None:
 
 async def main() -> None:
     setup_logging()
+
+    if "--test-notify" in sys.argv:
+        from datetime import date
+        test_date = date(2026, 3, 15)
+        log.info("Sending TEST notification for date: %s", test_date.isoformat())
+        notify.notify_all(test_date)
+        log.info("Test notification sent.")
+        return
+
     once = "--once" in sys.argv
     log.info("Appointment checker started. Mode: %s. Headless: %s",
              "single run" if once else f"loop ({config.CHECK_INTERVAL_MINUTES}min)",
